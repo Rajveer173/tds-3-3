@@ -188,6 +188,7 @@ def extract_total(text: str) -> Optional[float]:
         r"(?:^|\n)\s*total\s*due\b\s*[:\-.]*\s*([^\n]+)",
         r"(?:^|\n)\s*total\s*amount\b\s*[:\-.]*\s*([^\n]+)",
         r"(?:^|\n)\s*amount\s*payable\b\s*[:\-.]*\s*([^\n]+)",
+        r"(?:^|\n)\s*amount\s*due\b\s*[:\-.]*\s*([^\n]+)",
         # bare "Total" but not "Subtotal"/"Sub-total" (negative lookbehind)
         r"(?:^|\n)\s*(?<!sub\s)(?<!sub-)total\b\s*[:\-.]*\s*([^\n]+)",
     ]
@@ -207,6 +208,8 @@ def extract_amount(text: str) -> Optional[float]:
         r"(?:^|\n)\s*gross\s*amount\b\s*[:\-.]*\s*([^\n]+)",
         r"(?:^|\n)\s*amount\s*\(?\s*(?:excl\.?|before)\s*\.?\s*tax\)?\b\s*[:\-.]*\s*([^\n]+)",
         r"(?:^|\n)\s*(?:price|value)\s*(?:before\s*tax|excl\.?\s*tax)\b\s*[:\-.]*\s*([^\n]+)",
+        # bare "Amount:" — but not "Amount Payable"/"Amount Due" (those are grand totals)
+        r"(?:^|\n)\s*amount\b(?!\s*(?:payable|due|in\s*words))\s*[:\-.]*\s*([^\n]+)",
     ]
     raw = _find_first(patterns, text)
     if raw:
