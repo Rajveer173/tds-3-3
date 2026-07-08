@@ -47,6 +47,28 @@ def _to_number(raw: str) -> Optional[float]:
         return None
 
 
+def _line_amount(raw: str) -> Optional[float]:
+    """Extract the actual currency amount from a captured label line,
+    ignoring any percentage-rate figures like '18%' or '(19%)' that may
+    appear before or alongside the amount (e.g. 'GST 19%: Rs. 779.00',
+    'Tax (18%) Rs. 395.82'). Picks the last remaining numeric token, since
+    the rate — if present — comes before the amount in every format seen."""
+    if raw is None:
+        return None
+    # strip out percentage mentions entirely, parens or not
+    cleaned = re.sub(r"\(?\s*\d+(?:\.\d+)?\s*%\s*\)?", " ", raw)
+    # drop currency symbols/words
+    cleaned = re.sub(r"(rs\.?|inr|usd|\$|₹|eur|€|gbp|£)", " ", cleaned, flags=re.IGNORECASE)
+    nums = re.findall(r"\d[\d,]*(?:\.\d+)?", cleaned)
+    if not nums:
+        return None
+    last = nums[-1].replace(",", "")
+    try:
+        return float(last)
+    except ValueError:
+        return None
+
+
 def _parse_date(raw: str) -> Optional[str]:
     if not raw:
         return None
@@ -166,10 +188,7 @@ def extract_amount(text: str) -> Optional[float]:
     ]
     raw = _find_first(patterns, text)
     if raw:
-        # take the first numeric token on that line (strip trailing dot-leaders already gone)
-        num = _to_number(raw)
-        if num is not None:
-            return num
+        return _line_amount(raw)
     return None
 
 
@@ -179,9 +198,7 @@ def extract_tax(text: str) -> Optional[float]:
     ]
     raw = _find_first(patterns, text)
     if raw:
-        num = _to_number(raw)
-        if num is not None:
-            return num
+        return _line_amount(raw)
     return None
 
 
