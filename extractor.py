@@ -203,6 +203,7 @@ def extract_amount(text: str) -> Optional[float]:
     patterns = [
         r"(?:^|\n)\s*sub\s*-?\s*total\b\s*[:\-.]*\s*([^\n]+)",
         r"(?:^|\n)\s*taxable\s*(?:value|amount)\b\s*[:\-.]*\s*([^\n]+)",
+        r"(?:^|\n)\s*assessable\s*value\b\s*[:\-.]*\s*([^\n]+)",
         r"(?:^|\n)\s*net\s*amount\b\s*[:\-.]*\s*([^\n]+)",
         r"(?:^|\n)\s*basic\s*amount\b\s*[:\-.]*\s*([^\n]+)",
         r"(?:^|\n)\s*gross\s*amount\b\s*[:\-.]*\s*([^\n]+)",
