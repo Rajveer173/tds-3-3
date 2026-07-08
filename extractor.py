@@ -181,14 +181,46 @@ def extract_vendor(text: str) -> Optional[str]:
     return None
 
 
-def extract_amount(text: str) -> Optional[float]:
-    """Subtotal before tax."""
+def extract_total(text: str) -> Optional[float]:
+    """Grand total (amount + tax), used only as a fallback to derive amount."""
     patterns = [
-        r"(?:^|\n)\s*sub\s*-?\s*total\b\s*[:\-.]*\s*([^\n]+)",
+        r"(?:^|\n)\s*grand\s*total\b\s*[:\-.]*\s*([^\n]+)",
+        r"(?:^|\n)\s*total\s*due\b\s*[:\-.]*\s*([^\n]+)",
+        r"(?:^|\n)\s*total\s*amount\b\s*[:\-.]*\s*([^\n]+)",
+        r"(?:^|\n)\s*amount\s*payable\b\s*[:\-.]*\s*([^\n]+)",
+        # bare "Total" but not "Subtotal"/"Sub-total" (negative lookbehind)
+        r"(?:^|\n)\s*(?<!sub\s)(?<!sub-)total\b\s*[:\-.]*\s*([^\n]+)",
     ]
     raw = _find_first(patterns, text)
     if raw:
         return _line_amount(raw)
+    return None
+
+
+def extract_amount(text: str) -> Optional[float]:
+    """Subtotal before tax."""
+    patterns = [
+        r"(?:^|\n)\s*sub\s*-?\s*total\b\s*[:\-.]*\s*([^\n]+)",
+        r"(?:^|\n)\s*taxable\s*(?:value|amount)\b\s*[:\-.]*\s*([^\n]+)",
+        r"(?:^|\n)\s*net\s*amount\b\s*[:\-.]*\s*([^\n]+)",
+        r"(?:^|\n)\s*basic\s*amount\b\s*[:\-.]*\s*([^\n]+)",
+        r"(?:^|\n)\s*gross\s*amount\b\s*[:\-.]*\s*([^\n]+)",
+        r"(?:^|\n)\s*amount\s*\(?\s*(?:excl\.?|before)\s*\.?\s*tax\)?\b\s*[:\-.]*\s*([^\n]+)",
+        r"(?:^|\n)\s*(?:price|value)\s*(?:before\s*tax|excl\.?\s*tax)\b\s*[:\-.]*\s*([^\n]+)",
+    ]
+    raw = _find_first(patterns, text)
+    if raw:
+        val = _line_amount(raw)
+        if val is not None:
+            return val
+
+    # Fallback: derive subtotal as (grand total - tax) when both are present
+    # but no explicit "subtotal"-style label was found.
+    total = extract_total(text)
+    tax = extract_tax(text)
+    if total is not None and tax is not None:
+        return round(total - tax, 2)
+
     return None
 
 
